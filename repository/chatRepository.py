@@ -1,42 +1,47 @@
+from typing import Any, Coroutine
+
 from flask import session
-from config.db import get_db
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from config.db import connection
 from entity.chatEntity import Chat
 from entity.userApp import UserApp
 from exceptions.EntityException import EntityException
-class ChatRepository:
-    @staticmethod
-    def add_chat(entity:Chat,user:UserApp,session_db=next(get_db()))->Chat:
-        user.chats.append(entity);
-        session_db.commit()
-        session_db.refresh(entity)
-        return entity
-    @staticmethod
-    def get_chat_by_id(id:int, session_db=next(get_db()))->Chat:
-        find_chat=session_db.get(Chat, id)
-        if find_chat is None:
-            raise EntityException("chat not found",Chat)
-        return find_chat
-    @staticmethod
-    def update_chat(entity:Chat, session_db=next(get_db()))->Chat:
-        find_chat=ChatRepository.get_chat_by_id(entity.id)
+from repository.crudEntity import CRDEntity
+
+
+class ChatRepository(CRDEntity):
+    model = Chat
+    @classmethod
+    async def update_chat(cls, session_db:AsyncSession,entity:Chat):
+        find_chat= await cls.find_by_id(session_db,entity)
         find_chat.name=entity.name
-        session_db.commit()
-        session_db.refresh(find_chat)
+        try:
+            await session_db.commit()
+            await session_db.refresh(find_chat)
+        except SQLAlchemy as e:
+            await session_db.rollback()
+            raise e
         return find_chat
-    @staticmethod
-    def delete_chat(chat:Chat, session_db=next(get_db())):
-        session_db.delete(chat)
-        session_db.commit()
-    @staticmethod
-    def add_user_to_chat(chat:Chat, user:UserApp, session_db=next(get_db()))->Chat:
+    @classmethod
+    async def add_user_to_chat(cls,session_db:AsyncSession,chat:Chat, user:UserApp):
         chat.users.append(user)
-        session_db.commit()
-        session_db.refresh(chat)
+        try:
+            await session_db.commit()
+            await session_db.refresh(chat)
+        except SQLAlchemy as e:
+            await session_db.rollback()
+            raise e
         return chat
-    @staticmethod
-    def delete_user_to_chat(chat:Chat,user:UserApp,session_db=next(get_db()))->Chat:
+    @classmethod
+    async def delete_user_to_chat(cls,session_db:AsyncSession,chat:Chat,user:UserApp):
         chat.users.remove(user)
-        session_db.commit()
-        session_db.refresh(chat)
+        try:
+            await session_db.commit()
+            await session_db.refresh(chat)
+        except SQLAlchemy as e:
+            await session_db.rollback()
+            raise e
         return chat
 

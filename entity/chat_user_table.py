@@ -1,10 +1,8 @@
-from sqlalchemy import Column, Table, ForeignKey
-from config.db import Base
-
-
-chat_user_table=Table(
-    "chat_user",
+from sqlalchemy import Column, Table, ForeignKey, Integer
+from entity.base import Base
+chat_user = Table(
+    'chat_user',
     Base.metadata,
-    Column("chat_id",ForeignKey("chat.id")),
-    Column("user_id",ForeignKey("userApp.id"))
+    Column('chat_id', Integer, ForeignKey('chat.id'), primary_key=True),
+    Column('user_id', Integer, ForeignKey('user_app.id'), primary_key=True)  # Adjust table name
 )

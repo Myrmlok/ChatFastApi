@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from dtos.userDto import UserDto
 from entity.chatEntity import Chat
 from entity.userApp import UserApp
-from userDto import userListEntity_to_listDto
+from dtos.userDto import userListEntity_to_listDto
 
 class ChatDto(BaseModel):
     id:int
