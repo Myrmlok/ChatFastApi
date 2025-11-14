@@ -1,11 +1,6 @@
-import os
-from sys import exception
-
-from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from config.envApp import settings
-from entity.base import Base
+
 engine=create_async_engine(settings.CONNECTION_STRING)
 
 async_session_maker=async_sessionmaker(bind=engine,expire_on_commit=False)

@@ -1,4 +1,5 @@
 import logging
+from uuid import UUID
 
 from fastapi import APIRouter, Request, Depends
 from fastapi.params import Body
@@ -6,7 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from starlette.responses import JSONResponse
 
-from dtos.userDto import UserDto
+from dtos.userDto import UserDto, userEntity_to_Dto
 from dtos.userDto import userDto_to_entity
 from exceptions.UsersExceptions import UserException
 from security.services.registerService import RegisterService
@@ -33,6 +34,9 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     except UserException as e:
         return JSONResponse(content={"message:":e.message},status_code=400)
     return {"access_token": access_token, "token_type": "bearer","refresh_token": None}
+@auth_router.get("/confirmEmail/{user_id}")
+async def confirm_email(user_id:str):
+    return userEntity_to_Dto(await RegisterService.confirmEmail( UUID(user_id)))
 @auth_router.delete("/logout")
 def logout():
     return "not working"

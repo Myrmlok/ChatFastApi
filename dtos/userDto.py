@@ -32,7 +32,7 @@ def userEntity_to_Dto(entity:UserApp)->UserDto:
     return UserDto(id=str(entity.id),username=entity.username,email=entity.email,password="null")
 
 def userListEntity_to_listDto(list_entity:List[UserApp]):
-    list_dto=List[UserDto]
+    list_dto=[]
     for el in list_entity:
         list_dto.append(userEntity_to_Dto(el))
     return list_dto
