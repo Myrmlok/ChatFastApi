@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     CONNECTION_STRING: str
+    CONNECTION_STRING_SYNC:str
     POSTGRES_USERNAME:str
     POSTGRES_PASSWORD:str
     POSTGRES_DB:str

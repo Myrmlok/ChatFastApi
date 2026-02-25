@@ -10,8 +10,3 @@ class UserService:
     @connection
     async def get_user_by_id(user_id:UUID,session):
         return await UserRepository.find_by_id(session,user_id)
-    @staticmethod
-    @connection
-    async  def getChats(user:UserApp,session):
-        find_user=await UserRepository.get_user_with_chats(session,user.id)
-        return find_user.chats

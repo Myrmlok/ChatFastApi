@@ -4,17 +4,17 @@ from fastapi import FastAPI
 from starlette.websockets import WebSocket
 
 from entity.userApp import UserApp
-from route.ChatRoute import chat_route
+from route.HallRoute import hall_route
+
 from security.services.authenticateService import get_current_user
 from security.route.auth import auth_router
 from route.UserRoute import user_route
 from service.emailService import EmailService
-from route.ChatWebsocket import chat_websockets
 app = FastAPI()
-app.include_router(chat_websockets)
+
 app.include_router(auth_router)
-app.include_router(chat_route)
 app.include_router(user_route)
+app.include_router(hall_route)
 @app.get("/")
 def root():
     return {"message": "World World"}

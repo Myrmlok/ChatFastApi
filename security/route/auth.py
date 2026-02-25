@@ -26,7 +26,6 @@ async def register(request_user:UserDto):
 
 @auth_router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-
     request_user=UserDto(email=form_data.username,password=form_data.password)
     try:
         log_user =await RegisterService.login_user(userDto_to_entity(request_user))
