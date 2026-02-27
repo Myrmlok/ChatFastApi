@@ -9,7 +9,6 @@ from watchfiles import awatch
 
 from config.db import connection
 from entity import UserApp
-from entity.Hall import UserHallRole
 from exceptions.UsersExceptions import UserException
 from repository.userRepository import UserRepository
 from route.UserRoute import user_route

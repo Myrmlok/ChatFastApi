@@ -5,13 +5,13 @@ from starlette.websockets import WebSocket
 
 from entity.userApp import UserApp
 from route.HallRoute import hall_route
-
+from route.TeamRoute import team_route
 from security.services.authenticateService import get_current_user
 from security.route.auth import auth_router
 from route.UserRoute import user_route
 from service.emailService import EmailService
 app = FastAPI()
-
+app.include_router(team_route)
 app.include_router(auth_router)
 app.include_router(user_route)
 app.include_router(hall_route)
