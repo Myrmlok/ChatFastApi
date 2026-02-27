@@ -1,8 +1,6 @@
-from flask_sqlalchemy import SQLAlchemy
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from watchfiles import awatch
-
 
 class CRDEntity:
     model= None
