@@ -1,7 +1,15 @@
+import base64
+import json
+import os
+from datetime import datetime
+
+import cv2
+import numpy as np
 from fastapi.params import Depends
 import uvicorn
 from fastapi import FastAPI
-from starlette.websockets import WebSocket
+from starlette.middleware.cors import CORSMiddleware
+from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from entity.userApp import UserApp
 from route.HallRoute import hall_route
@@ -10,11 +18,21 @@ from security.services.authenticateService import get_current_user
 from security.route.auth import auth_router
 from route.UserRoute import user_route
 from service.emailService import EmailService
-app = FastAPI()
 
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # В продакшене замените на конкретные домены
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(auth_router)
 app.include_router(user_route)
 app.include_router(hall_route)
+
+
+
 @app.get("/")
 def root():
     return {"message": "World World"}
@@ -26,10 +44,30 @@ async def test_mail(to:str):
     if await EmailService.async_send_message(to,"test","hello"):
         return {"message":"ok"}
     return {"message":"false"}
+
+
+WEBSOCKET_FRAMES_DIR = "websocket_frames"
+os.makedirs(WEBSOCKET_FRAMES_DIR, exist_ok=True)
+os.path.join(WEBSOCKET_FRAMES_DIR)
 @app.websocket("/ws")
 async def testWebSocket(websocket:WebSocket):
     await websocket.accept()
-    await websocket.send_text("hello");
-    await websocket.close()
+    try:
+        while (True):
+            message = await websocket.receive_text();
+            data = json.loads(message)
+            img_data = data['image']
+            timestamp = data.get('timestamp', datetime.now().isoformat())
+            if ',' in img_data:
+                img_data = img_data.split(',')[1]
+
+            img_bytes = base64.b64decode(img_data)
+            nparr = np.frombuffer(img_bytes, np.uint8)
+            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if frame is not None:
+                filename = f"frame_{datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]}.jpg"
+                cv2.imwrite(filename, frame)
+    except WebSocketDisconnect as e:
+        raise e
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8099)
+    uvicorn.run(app, host="0.0.0.0", port=8099,ws="websockets")

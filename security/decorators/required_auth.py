@@ -5,7 +5,7 @@ from fastapi import Request, Depends, HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
-from watchfiles import awatch
+
 
 from config.db import connection
 from entity import UserApp

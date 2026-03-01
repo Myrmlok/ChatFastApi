@@ -3,7 +3,6 @@ from sys import exception
 from typing import Any, Dict, List
 from uuid import UUID
 
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.instrumentation import find_native_user_instrumentation_hook
 from sqlalchemy.util import await_only

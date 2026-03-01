@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Video с сохранением кадров</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .video-section {
+            flex: 2;
+        }
+        .control-section {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        h3, h4 {
+            margin-top: 0;
+            color: #444;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        video, canvas {
+            width: 100%;
+            background: #2d2d2d;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin-bottom: 15px;
+        }
+        .stats {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .stats p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        .stats span {
+            font-weight: bold;
+            color: #007bff;
+            background: #e7f3ff;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .log {
+            height: 250px;
+            overflow-y: scroll;
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            border: 1px solid #333;
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            flex: 1 1 auto;
+            min-width: 120px;
+        }
+        button.primary {
+            background: #007bff;
+            color: white;
+        }
+        button.primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+        }
+        button.success {
+            background: #28a745;
+            color: white;
+        }
+        button.success:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+        button.warning {
+            background: #ffc107;
+            color: #333;
+        }
+        button.warning:hover {
+            background: #e0a800;
+        }
+        button.danger {
+            background: #dc3545;
+            color: white;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .input-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            background: #28a745;
+            color: white;
+            margin-left: 8px;
+        }
+        .connection-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-connected {
+            background: #28a745;
+            box-shadow: 0 0 8px #28a745;
+        }
+        .status-disconnected {
+            background: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎥 WebSocket Video с сохранением кадров</h1>
+
+    <div class="container">
+        <div class="video-section">
+            <video id="inputVideo" autoplay playsinline></video>
+            <canvas id="outputCanvas"></canvas>
+
+            <div class="stats">
+                <h3>
+                    📊 Статистика сессии
+                    <span id="connectionStatus" class="badge">Отключено</span>
+                </h3>
+                <p>🆔 Сессия ID: <span id="sessionId">-</span></p>
+                <p>📥 Получено кадров: <span id="framesReceived">0</span></p>
+                <p>💾 Сохранено кадров: <span id="framesSaved">0</span></p>
+                <p>📁 Директория сохранения: <span id="saveDir">-</span></p>
+                <p>⚙️ Интервал сохранения: <span id="saveInterval">5</span> кадров</p>
+                <p>⏱️ Время работы: <span id="uptime">0</span> сек</p>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <h3>🎮 Управление</h3>
+
+            <div class="button-group">
+                <button id="startBtn" class="success" onclick="startCamera()">▶ Запустить камеру</button>
+                <button id="stopBtn" class="danger" onclick="stopCamera()" disabled>⏹ Остановить камеру</button>
+            </div>
+
+            <div class="button-group">
+                <button id="connectBtn" class="primary" onclick="connectWebSocket()">🔌 Подключиться к серверу</button>
+                <button id="disconnectBtn" class="warning" onclick="disconnectWebSocket()" disabled>❌ Отключиться</button>
+            </div>
+
+            <h4>⚙️ Настройки сохранения</h4>
+            <div class="input-group">
+                <label for="saveIntervalInput">Интервал сохранения (кадров):</label>
+                <input type="number" id="saveIntervalInput" min="1" max="60" value="5">
+                <button class="primary" onclick="setSaveInterval()" style="margin-top: 8px;">Применить интервал</button>
+            </div>
+
+            <h4>📋 Управление сессией</h4>
+            <div class="button-group">
+                <button class="primary" onclick="getSessionInfo()">📊 Информация о сессии</button>
+                <button class="success" onclick="saveMetadata()">💾 Сохранить метаданные</button>
+            </div>
+            <div class="button-group">
+                <button class="warning" onclick="testConnection()">🔄 Проверить соединение</button>
+                <button class="danger" onclick="stopSession()">⏹ Завершить сессию</button>
+            </div>
+
+            <h4>📜 Лог событий</h4>
+            <div class="log" id="log"></div>
+
+            <p style="font-size: 12px; color: #888; margin-top: 10px; text-align: center;">
+                Версия 1.0 | WebSocket + OpenCV | Сохранение кадров
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Элементы DOM
+        const video = document.getElementById('inputVideo');
+        const canvas = document.getElementById('outputCanvas');
+        const ctx = canvas.getContext('2d');
+        const logDiv = document.getElementById('log');
+
+        // Состояние
+        let mediaStream = null;
+        let ws = null;
+        let sessionId = null;
+        let frameCounter = 0;
+        let savedCounter = 0;
+        let isSending = false;
+        let saveInterval = 5;
+        let startTime = null;
+        let uptimeInterval = null;
+
+        // Функция логирования
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            const timestamp = new Date().toLocaleTimeString('ru-RU');
+            entry.textContent = `[${timestamp}] ${message}`;
+
+            switch(type) {
+                case 'error':
+                    entry.style.color = '#ff6b6b';
+                    break;
+                case 'success':
+                    entry.style.color = '#69db7e';
+                    break;
+                case 'warning':
+                    entry.style.color = '#ffd43b';
+                    break;
+                default:
+                    entry.style.color = '#00ff00';
+            }
+
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        // Обновление времени работы
+        function updateUptime() {
+            if (startTime) {
+                const seconds = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('uptime').textContent = seconds;
+            }
+        }
+
+        // Запуск камеры
+        async function startCamera() {
+            try {
+                log('Запрос доступа к камере...', 'info');
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                });
+
+                video.srcObject = mediaStream;
+                await video.play();
+
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+
+                // Устанавливаем размер canvas
+                video.addEventListener('loadedmetadata', () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    log(`Камера запущена: ${video.videoWidth}x${video.videoHeight}`, 'success');
+                });
+
+                startTime = Date.now();
+                if (uptimeInterval) clearInterval(uptimeInterval);
+                uptimeInterval = setInterval(updateUptime, 1000);
+
+            } catch (error) {
+                log('❌ Ошибка запуска камеры: ' + error.message, 'error');
+            }
+        }
+
+        // Остановка камеры
+        function stopCamera() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+
+                if (uptimeInterval) {
+                    clearInterval(uptimeInterval);
+                    uptimeInterval = null;
+                }
+
+                log('⏹ Камера остановлена', 'warning');
+            }
+        }
+
+        // Подключение WebSocket
+        function connectWebSocket() {
+            const wsUrl = 'ws://localhost:8099/ws';
+            log(`🔄 Подключение к ${wsUrl}...`, 'info');
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                log('✅ WebSocket подключен к серверу', 'success');
+                document.getElementById('connectBtn').disabled = true;
+                document.getElementById('disconnectBtn').disabled = false;
+                document.getElementById('connectionStatus').textContent = 'Подключено';
+                document.getElementById('connectionStatus').style.background = '#28a745';
+                isSending = true;
+                sendFrames();
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+
+                switch(data.type) {
+                    case 'connection_established':
+                        sessionId = data.session_id;
+                        document.getElementById('sessionId').textContent = sessionId;
+                        log(`🆔 Сессия создана: ${sessionId}`, 'success');
+                        break;
+
+                    case 'session_info':
+                        sessionId = data.session_id;
+                        document.getElementById('sessionId').textContent = sessionId;
+                        document.getElementById('saveDir').textContent = data.message.split('в ')[1] || '-';
+                        log(`📁 Директория сохранения: ${data.message}`, 'success');
+                        break;
+
+                    case 'processed_frame':
+                        // Отображаем обработанный кадр
+                        const img = new Image();
+                        img.onload = () => {
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        };
+                        img.src = 'data:image/jpeg;base64,' + data.image;
+
+                        frameCounter = data.frame_number || frameCounter + 1;
+                        document.getElementById('framesReceived').textContent = frameCounter;
+                        break;
+
+                    case 'status':
+                        savedCounter = data.frames_saved;
+                        document.getElementById('framesSaved').textContent = savedCounter;
+                        document.getElementById('saveDir').textContent = data.save_directory || '-';
+                        log(`💾 Сохранено кадров: ${savedCounter}`, 'info');
+                        break;
+
+                    case 'error':
+                        log('❌ Ошибка сервера: ' + data.message, 'error');
+                        break;
+
+                    case 'session_info_response':
+                        log('📊 Информация о сессии получена', 'success');
+                        console.log('Session info:', data.info);
+                        break;
+
+                    case 'metadata_saved':
+                        log(`📁 Метаданные сохранены: ${data.path}`, 'success');
+                        break;
+
+                    case 'interval_updated':
+                        saveInterval = data.new_interval;
+                        document.getElementById('saveInterval').textContent = saveInterval;
+                        log(`⚙️ Интервал сохранения изменен на ${saveInterval}`, 'success');
+                        break;
+
+                    case 'pong':
+                        log('🏓 Pong от сервера', 'info');
+                        break;
+                }
+            };
+
+            ws.onclose = () => {
+                log('❌ WebSocket отключен от сервера', 'warning');
+                document.getElementById('connectBtn').disabled = false;
+                document.getElementById('disconnectBtn').disabled = true;
+                document.getElementById('connectionStatus').textContent = 'Отключено';
+                document.getElementById('connectionStatus').style.background = '#dc3545';
+                isSending = false;
+            };
+
+            ws.onerror = (error) => {
+                log('❌ Ошибка WebSocket: ' + (error.message || 'Неизвестная ошибка'), 'error');
+            };
+        }
+
+        // Отключение WebSocket
+        function disconnectWebSocket() {
+            if (ws) {
+                log('🔌 Отключение от сервера...', 'warning');
+                ws.close();
+            }
+        }
+
+        // Отправка кадров
+        function sendFrames() {
+            if (!isSending || !ws || ws.readyState !== WebSocket.OPEN || !video.videoWidth) {
+                setTimeout(sendFrames, 100);
+                return;
+            }
+
+            try {
+                // Создаем временный canvas для захвата кадра
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = video.videoWidth;
+                tempCanvas.height = video.videoHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(video, 0, 0);
+
+                // Конвертируем в base64 с меньшим качеством для скорости
+                const imageData = tempCanvas.toDataURL('image/jpeg', 0.6);
+
+                // Отправляем кадр
+                ws.send(JSON.stringify({
+                    type: 'frame',
+                    image: imageData,
+                    timestamp: Date.now(),
+                    frame_number: frameCounter + 1
+                }));
+
+            } catch (error) {
+                log('Ошибка отправки кадра: ' + error.message, 'error');
+            }
+
+            // Продолжаем отправку
+            setTimeout(sendFrames, 100); // ~10 FPS
+        }
+
+        // Установка интервала сохранения
+        function setSaveInterval() {
+            const interval = parseInt(document.getElementById('saveIntervalInput').value);
+            if (isNaN(interval) || interval < 1) {
+                log('⚠️ Введите корректный интервал (минимум 1)', 'warning');
+                return;
+            }
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'command',
+                    command: 'set_save_interval',
+                    interval: interval
+                }));
+                log(`📤 Запрос на изменение интервала: ${interval}`, 'info');
+            } else {
+                log('⚠️ WebSocket не подключен', 'warning');
+            }
+        }
+
+        // Получение информации о сессии
+        function getSessionInfo() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'command',
+                    command: 'get_session_info'
+                }));
+                log('📤 Запрос информации о сессии', 'info');
+            } else {
+                log('⚠️ WebSocket не подключен', 'warning');
+            }
+        }
+
+        // Сохранение метаданных
+        function saveMetadata() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'command',
+                    command: 'save_metadata'
+                }));
+                log('📤 Запрос сохранения метаданных', 'info');
+            } else {
+                log('⚠️ WebSocket не подключен', 'warning');
+            }
+        }
+
+        // Завершение сессии
+        function stopSession() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'command',
+                    command: 'stop_session'
+                }));
+                log('📤 Запрос завершения сессии', 'warning');
+            } else {
+                log('⚠️ WebSocket не подключен', 'warning');
+            }
+        }
+
+        // Тест соединения
+        function testConnection() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'ping',
+                    timestamp: Date.now()
+                }));
+                log('📤 Ping отправлен', 'info');
+            } else {
+                log('⚠️ WebSocket не подключен', 'warning');
+            }
+        }
+
+        // Автоматически запускаем камеру и подключаемся при загрузке
+        window.onload = () => {
+            log('🚀 Приложение загружено', 'success');
+            startCamera();
+            setTimeout(connectWebSocket, 1000);
+        };
+
+        // Очистка при закрытии
+        window.onbeforeunload = () => {
+            stopCamera();
+            if (ws) {
+                ws.close();
+            }
+            if (uptimeInterval) {
+                clearInterval(uptimeInterval);
+            }
+        };
+    </script>
+</body>
+</html>
