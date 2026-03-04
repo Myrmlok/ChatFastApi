@@ -17,11 +17,16 @@ from security.services.authenticateService import get_current_user
 from security.route.auth import auth_router
 from route.UserRoute import user_route
 from service.emailService import EmailService
+from  route.TeamRoute import team_route
+from route.VertexRoute import vertex_point_router
+from route.FocusPointRoute import focus_point_route
 app = FastAPI()
-
+app.include_router(focus_point_route)
+app.include_router(vertex_point_router)
 app.include_router(auth_router)
 app.include_router(user_route)
 app.include_router(hall_route)
+app.include_router(team_route)
 @app.get("/")
 def root():
     return {"message": "World World"}

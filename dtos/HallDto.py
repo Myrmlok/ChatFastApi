@@ -11,7 +11,7 @@ from dtos.VertexDto import VertexDto
 class HallDto(BaseModel):
     id:int=None
     name:str
-    user_id:UUID=None
+    team_id:int=None
     model_config = ConfigDict(
         from_attributes=True  # автоматическое преобразование из SQLAlchemy
     )

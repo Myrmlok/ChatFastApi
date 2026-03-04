@@ -16,3 +16,4 @@ class Hall(Base):
     vertexes:Mapped[List[Vertex]]=relationship("Vertex",back_populates="hall",lazy="selectin")
     focusPoints:Mapped[List[FocusPoint]]=relationship("FocusPoint",back_populates="hall",lazy="selectin")
     team_id:Mapped[int]=mapped_column(ForeignKey("team.id"))
+    team:Mapped["Team"]=relationship("Team",back_populates="halls")

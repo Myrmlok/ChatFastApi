@@ -35,7 +35,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token": access_token, "token_type": "bearer","refresh_token": None}
 @auth_router.get("/confirmEmail/{user_id}")
 async def confirm_email(user_id:str):
-    return UserDto.model_response(await RegisterService.confirmEmail( UUID(user_id)))
+    return UserDto.model_validate(await RegisterService.confirmEmail( UUID(user_id)))
 @auth_router.delete("/logout")
 def logout():
     return "not working"

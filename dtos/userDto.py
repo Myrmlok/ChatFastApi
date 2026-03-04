@@ -19,11 +19,14 @@ class UserDto(BaseModel):
         json_encoders={uuid.UUID: str},
         from_attributes=True  # автоматическое преобразование из SQLAlchemy
     )
+
+    @model_validator(mode='before')
     @classmethod
-    def model_response(cls,orm):
-        res=cls.model_validate(orm)
-        res.password=None
-        return res
+    def set_password_to_none(cls, data):
+        if hasattr(data, '__dict__') and hasattr(data, 'password'):
+            # Для ORM объектов устанавливаем password в None
+            data.password = ""
+        return data
     def validate_email_format(self):
         email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not re.match(email_regex,self.email):

@@ -27,31 +27,39 @@ class Team(Base):
     __tablename__ = "team"
     id:Mapped[int]=Column(Integer,primary_key=True,server_default=Identity())
     name:Mapped[str]=Column(String)
-    halls:Mapped[List[Hall]]=relationship("Hall",lazy="selectin")
+    halls:Mapped[List[Hall]]=relationship("Hall",
+                                          lazy="selectin",
+                                          cascade="save-update, merge, delete",
+                                          back_populates="team")
     users:Mapped[List[UserApp]]=relationship(
         "UserApp",
         secondary="team_association",
         primaryjoin=id==foreign(TeamAssociation.team_id),
         secondaryjoin=foreign(TeamAssociation.user_id)==remote(UserApp.id),
-        lazy="selectin"
+        lazy="selectin",
+        viewonly=True
     )
-    admins:Mapped[List[UserApp]]=relationship(
+    admins: Mapped[List[UserApp]] = relationship(
         "UserApp",
         secondary="team_association",
         primaryjoin=and_(id == foreign(TeamAssociation.team_id),
                          or_(
-                             TeamAssociation.role== TeamRole.ADMIN,
-                             TeamAssociation.role== TeamRole.OWNER
+                             TeamAssociation.role == TeamRole.ADMIN,
+                             TeamAssociation.role == TeamRole.OWNER
                          )),
         secondaryjoin=foreign(TeamAssociation.user_id) == remote(UserApp.id),
-        lazy="selectin"
+        viewonly=True,
+        lazy="selectin",
+        overlaps="users"
     )
     owners: Mapped[List[UserApp]] = relationship(
         "UserApp",
         secondary="team_association",
         primaryjoin=and_(id == foreign(TeamAssociation.team_id),
-                        TeamAssociation.role == TeamRole.OWNER),
+                         TeamAssociation.role == TeamRole.OWNER),
+        viewonly=True,
         secondaryjoin=foreign(TeamAssociation.user_id) == remote(UserApp.id),
-        lazy="selectin"
+        lazy="selectin",
+        overlaps="users,admins"
     )
 

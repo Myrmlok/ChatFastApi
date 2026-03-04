@@ -21,5 +21,7 @@ class CRDEntity:
         await session.commit()
     @classmethod
     async def find_by_id_with_depends(cls,session:AsyncSession,model_id):
-        return await session.execute(select(cls.model).where(cls.model.id==model_id))
+        stmt = select(cls.model).where(cls.model.id == model_id)
+        result = await session.execute(stmt)
+        return result.scalar_one_or_none()
 

@@ -9,10 +9,10 @@ from dtos.userDto import UserDto
 class TeamDto(BaseModel):
     id:int=None
     name:str
-    members:List[UserDto]=None
-    admins_owners:List[UserDto]=None
-    owners:List[UserDto]=None
-    halls:List[HallDto]=None
+    users:List[UserDto]=[]
+    admins:List[UserDto]=[]
+    owners:List[UserDto]=[]
+    halls:List[HallDto]=[]
     model_config = ConfigDict(
         from_attributes=True  # автоматическое преобразование из SQLAlchemy
     )
