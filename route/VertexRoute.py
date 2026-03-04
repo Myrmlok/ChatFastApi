@@ -1,10 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette import status
 
 from config.db import get_db
 from dtos.VertexDto import VertexDto
-from entity import UserApp, Hall, Vertex
+from entity import UserApp, Hall, Vertex, Team
+from repository.TeamRepository import TeamRepository
 from repository.VertexRepository import VertexRepository
 from repository.hallRepository import HallRepository
 from route.HallRoute import get_hall
@@ -18,7 +20,12 @@ async def add_vertex(
         dto:VertexDto,
         session:AsyncSession=Depends(get_db),
         user:UserApp=Depends(get_current_user)):
-    hall:Hall=await get_hall(team_id,hall_id,session,user)
+    team: Team = await TeamRepository.find_by_id_with_depends(session, team_id)
+    if not user.id in [el.id for el in team.owners]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You not user this team")
+    hall: Hall = await HallRepository.find_by_id_with_depends(session, hall_id)
     vertex:Vertex=Vertex(**dto.model_dump())
     vertex.hall_id=hall.id
     res=await VertexRepository.add(session,vertex)
