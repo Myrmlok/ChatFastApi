@@ -43,21 +43,21 @@ os.makedirs(WEBSOCKET_FRAMES_DIR, exist_ok=True)
 @app.websocket("/ws")
 async def testWebSocket(websocket:WebSocket):
     await websocket.accept()
-
-    while True:
-        message = await websocket.receive_text()
-        data = json.loads(message)
-        img_data = data['image']
-        if ',' in img_data:
-            img_data = img_data.split(',')[1]
-        timestamp = data.get('timestamp', datetime.now().isoformat())
-        img_bytes = base64.b64decode(img_data)
-        nparr = np.frombuffer(img_bytes, np.uint8)
-        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-        filename = f"{WEBSOCKET_FRAMES_DIR}/frame_{timestamp}.jpg"
-
-        cv2.imwrite(filename, frame)
-    await websocket.close()
+    try:
+        while True:
+            message = await websocket.receive_text()
+            data = json.loads(message)
+            img_data = data['image']
+            if ',' in img_data:
+                img_data = img_data.split(',')[1]
+            timestamp = data.get('timestamp', datetime.now().isoformat())
+            img_bytes = base64.b64decode(img_data)
+            nparr = np.frombuffer(img_bytes, np.uint8)
+            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            filename = f"{WEBSOCKET_FRAMES_DIR}/frame_{timestamp}.jpg"
+            cv2.imwrite(filename, frame)
+    except Exception as e:
+        print(e)
+        await websocket.close()
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8099)
