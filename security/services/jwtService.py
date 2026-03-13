@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timedelta
 from datetime import timezone
-from uuid import UUID
+
 
 from jose import jwt, JWTError
 from pydantic.v1 import UUID4
@@ -17,7 +17,7 @@ def create_access_token(user:UserApp)->str:
     return jwt.encode(to_encode,settings.SECRET_KEY,settings.ALGORITHM_HASH)
 def get_claims(token:str)->dict:
     return jwt.decode(token,settings.SECRET_KEY,settings.ALGORITHM_HASH)
-def token_get_uuid(token:str)-> UUID:
+def token_get_uuid(token:str)-> uuid.UUID:
     return uuid.UUID(get_claims(token).get("uuid"))
 def token_is_valid(token:str)->bool:
     try:

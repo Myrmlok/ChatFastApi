@@ -6,11 +6,13 @@ from starlette import status
 from config.db import get_db
 from dtos.VertexDto import VertexDto
 from entity import UserApp, Hall, Vertex, Team
+from entity.Team import TeamRole
 from repository.TeamRepository import TeamRepository
 from repository.VertexRepository import VertexRepository
 from repository.hallRepository import HallRepository
 from route.HallRoute import get_hall
-from security.services.authenticateService import get_current_user
+from security.checks.check_auth import CheckAuth
+from security.services.authenticateService import get_current_user, get_current_user_id
 
 vertex_point_router=APIRouter(prefix="/teams/{team_id}/halls/{hall_id}/vertexes",tags=["vertex"])
 @vertex_point_router.post("/")
@@ -19,14 +21,9 @@ async def add_vertex(
         hall_id:int,
         dto:VertexDto,
         session:AsyncSession=Depends(get_db),
-        user:UserApp=Depends(get_current_user)):
-    team: Team = await TeamRepository.find_by_id_with_depends(session, team_id)
-    if not user.id in [el.id for el in team.owners]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You not user this team")
-    hall: Hall = await HallRepository.find_by_id_with_depends(session, hall_id)
+        user_id=Depends(get_current_user_id)):
+    await CheckAuth.check_auth(session,team_id,user_id,TeamRole.ADMIN)
     vertex:Vertex=Vertex(**dto.model_dump())
-    vertex.hall_id=hall.id
+    vertex.hall_id=hall_id
     res=await VertexRepository.add(session,vertex)
     return res

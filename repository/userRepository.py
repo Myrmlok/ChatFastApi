@@ -18,3 +18,6 @@ class UserRepository(CRDEntity):
         statement=select(UserApp).where(UserApp.email==email)
         find_user=await session.execute(statement)
         return find_user.scalars().first()
+    @classmethod
+    async def find_by_id_with_depends(cls,session:AsyncSession,model_id):
+        return await cls.find_by_id_with_select_depends(session,model_id,selectinload(UserApp.teams))

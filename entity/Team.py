@@ -36,7 +36,7 @@ class Team(Base):
         secondary="team_association",
         primaryjoin=id==foreign(TeamAssociation.team_id),
         secondaryjoin=foreign(TeamAssociation.user_id)==remote(UserApp.id),
-        lazy="selectin",
+        lazy="raise",
         viewonly=True
     )
     admins: Mapped[List[UserApp]] = relationship(
@@ -49,7 +49,7 @@ class Team(Base):
                          )),
         secondaryjoin=foreign(TeamAssociation.user_id) == remote(UserApp.id),
         viewonly=True,
-        lazy="selectin",
+        lazy="raise",
         overlaps="users"
     )
     owners: Mapped[List[UserApp]] = relationship(
@@ -59,7 +59,7 @@ class Team(Base):
                          TeamAssociation.role == TeamRole.OWNER),
         viewonly=True,
         secondaryjoin=foreign(TeamAssociation.user_id) == remote(UserApp.id),
-        lazy="selectin",
+        lazy="raise",
         overlaps="users,admins"
     )
 

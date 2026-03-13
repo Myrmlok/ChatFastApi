@@ -5,21 +5,26 @@ from typing import List, Any, Self
 
 from pydantic import BaseModel, EmailStr, validator, field_validator, UUID4, ConfigDict, model_validator, Field
 from pydantic.v1 import NoneStr
-
 from dtos.HallDto import HallDto
 from entity.userApp import UserApp
 
 
+class TeamModel(BaseModel):
+    id:int=None
+    name:str
+    model_config = ConfigDict(
+        from_attributes=True  # автоматическое преобразование из SQLAlchemy
+    )
 class UserDto(BaseModel):
     id: uuid.UUID = None
     username:str = None
     email:str
     password:str
+    teams:List[TeamModel]=[]
     model_config = ConfigDict(
         json_encoders={uuid.UUID: str},
         from_attributes=True  # автоматическое преобразование из SQLAlchemy
     )
-
     @model_validator(mode='before')
     @classmethod
     def set_password_to_none(cls, data):

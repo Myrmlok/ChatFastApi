@@ -14,7 +14,14 @@ class UserApp(Base):
     email:Mapped[str]=Column(String,unique=True,nullable=False)
     username:Mapped[str]=Column(String,default="user")
     password:Mapped[str]=Column(String)
-
+    teams:Mapped[List["Team"]]=relationship(
+        "Team",
+        secondary="team_association",
+        primaryjoin="UserApp.id==TeamAssociation.user_id",
+        secondaryjoin="TeamAssociation.team_id == Team.id",
+        lazy="raise",
+        viewonly=True,
+    )
 
 
 

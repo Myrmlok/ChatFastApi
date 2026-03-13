@@ -1,4 +1,5 @@
 import logging
+from uuid import UUID
 
 from fastapi import HTTPException
 from fastapi.params import Depends
@@ -21,6 +22,17 @@ async def get_current_user(token:str=Depends(reusable_oauth))->UserApp:
             return  await UserService.get_user_by_id(token_get_uuid(token))
     except UserNotFoundException as e:
         print(e.message)
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+def get_current_user_id(token:str=Depends(reusable_oauth))-> UUID:
+    try:
+        if token_is_valid(token) :
+            return  token_get_uuid(token)
+    except Exception as e:
+            print(e)
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
