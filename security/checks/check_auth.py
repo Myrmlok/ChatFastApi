@@ -20,7 +20,7 @@ class CheckAuth:
                 team: Team = await TeamRepository.find_by_id_with_admins(session, team_id)
                 arr=team.admins
             case TeamRole.OWNER:
-                team: Team = await TeamRepository.find_by_id_with_admins(session, team_id)
+                team: Team = await TeamRepository.find_by_id_with_owners(session, team_id)
                 arr=team.owners
         for el in arr:
             if el.id==user_id:
